@@ -3,6 +3,8 @@
 import React from 'react';
 import SideNav from "@/app/ui/dashboard/sidenav";
 
+const experimental_ppr = true;
+
 export default async function DashboardLayout({
                                                   children
                                               }: { children: React.ReactNode }
