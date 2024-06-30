@@ -4,6 +4,7 @@ import React from 'react';
 import Breadcrumbs from "@/app/ui/invoices/breadcrumbs";
 import Form from '@/app/ui/invoices/edit-form';
 import {fetchCustomers, fetchInvoiceById} from "@/app/lib/data";
+import { notFound } from 'next/navigation';
 
 export default async function EditInvoicePage({
                                                   params
@@ -13,6 +14,9 @@ export default async function EditInvoicePage({
 
     const [invoice,customers] = await Promise.all([fetchInvoiceById(id), fetchCustomers()])
 
+    if (!invoice) {
+        return notFound();
+    }
 
     return (
         <main>
