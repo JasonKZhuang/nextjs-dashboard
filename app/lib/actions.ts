@@ -6,6 +6,8 @@ import {z} from 'zod';
 import {sql} from '@vercel/postgres';
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
+import {signIn} from "@/auth";
+import {AuthError} from "next-auth";
 
 const FormSchema = z.object({
     id: z.string(),
@@ -14,7 +16,7 @@ const FormSchema = z.object({
     }),
     amount: z.coerce // 强制转换为数字同时验证类型
         .number()
-        .gt(0, { message: 'Please enter an amount greater than $0.' }),
+        .gt(0, {message: 'Please enter an amount greater than $0.'}),
     status: z.enum(['pending', 'paid'], {
         invalid_type_error: 'Please select an invoice status.',
     }),
@@ -32,7 +34,7 @@ export type State = {
     message?: string | null;
 };
 
-export async function createInvoice(prevState:State, argForm: FormData) {
+export async function createInvoice(prevState: State, argForm: FormData) {
     const rawFormData = {
         customerId: argForm.get('customerId'),
         amount: argForm.get('amount'),
@@ -60,7 +62,7 @@ export async function createInvoice(prevState:State, argForm: FormData) {
     }
 
     // Prepare data for insertion into the database
-    const { customerId, amount, status } = validatedFields.data;
+    const {customerId, amount, status} = validatedFields.data;
 
     // It's usually good practice to store monetary values in cents in your database
     // to eliminate JavaScript floating-point errors and ensure greater accuracy.
@@ -107,7 +109,7 @@ export async function updateInvoice(id: string, prevState: State, argForm: FormD
         };
     }
 
-    const { customerId, amount, status } = validatedFields.data;
+    const {customerId, amount, status} = validatedFields.data;
     const amountInCents = amount * 100;
 
     try {
@@ -135,5 +137,21 @@ export async function deleteInvoice(id: string) {
         revalidatePath('/dashboard/invoices');
     } catch (error) {
         return {message: 'Database Error: Failed to Delete Invoice.'};
+    }
+}
+
+export async function authenticate(prevState: string | undefined, formData: FormData,) {
+    try {
+        await signIn('credentials', formData);
+    } catch (error) {
+        if (error instanceof AuthError) {
+            switch (error.type) {
+                case 'CredentialsSignin':
+                    return 'Invalid credentials.';
+                default:
+                    return 'Something went wrong.';
+            }
+        }
+        throw error;
     }
 }
